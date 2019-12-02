@@ -1,11 +1,10 @@
 entity priority_queue is
     generic(
-            wordSize : integer
             rowSize  : integer
     );
     port (  clk, reset : in std_logic;
             insert, delete : in std_logic;
-            key, value : in std_logic_vector(wordSize-1 downto 0);
+            key, value : in integer;
             data : out std_logic_vector(wordSize-1 downto 0);
             busy, empty, full : out std_logic
     );
@@ -13,12 +12,18 @@ end priority_queue;
 
 architecture Behavioral of priority_queue is
 
+type pair is record
+    x : integer;
+    y : integer;
+end record pair;
+
 type node is record
     data_present : std_logic;
-    key, value : std_logic_vector(wordSize-1 downto 0);
+    cost : integer;
+    coord : pair;
 end record node;
 
-type rows is array(0 to wordSize-1) of node;
+type rows is array(0 to rowSize-1) of node;
 signal top, bot : rows;
 
 type state_type is (ready, inserting, deleting);
@@ -54,7 +59,7 @@ begin
 
         elsif state = inserting or state = deleting then
             for i in 0 to rowSize-1 loop
-                if top(i).data_present = '1' and (bot(i).data_present = '0’ or top(i).key < bot(i).key) then
+                if top(i).data_present = '1' and (bot(i).data_present = '0’ or top(i).cost < bot(i).cost) then
                     bot(i) <= top(i);
                     top(i) <= bot(i);
                 end if;
