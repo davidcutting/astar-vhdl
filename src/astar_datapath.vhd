@@ -2,11 +2,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.node.all
+use work.node.all;
+use work.pair.all;
 
 entity astar_datapath is
     port (
         clk, reset : in std_logic
+        
     );
 end astar_datapath;
 
@@ -31,13 +33,13 @@ end component;
 begin
 
     u_weight_mem : ram generic map (
-        WORD_SIZE <= 8,
-        ADDR_SIZE <= 16
+        WORD_SIZE => 8,
+        ADDR_SIZE => 16
     )
     port map (
         clk => clk,
         reset => reset,
-
+        
     );
 
     -- find neighbors

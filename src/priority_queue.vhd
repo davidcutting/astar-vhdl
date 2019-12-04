@@ -1,7 +1,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-use work.node.all
+use work.node.all;
+use work.pair.all;
 
 entity priority_queue is
     generic(
@@ -55,7 +56,7 @@ begin
                 end if;
             elsif state = inserting or state = deleting then
                 for i in 0 to length-1 loop -- swap minimum node in to top of queue
-                    if top(i).data_present = '1' and (bot(i).data_present = '0’ or top(i).key < bot(i).key) then
+                    if top(i).data_present = '1' and (bot(i).data_present = '0' or top(i).key < bot(i).key) then
                         bot(i) <= top(i); -- works because <= take place after process has run?
                         top(i) <= bot(i);
                     end if;
@@ -65,7 +66,7 @@ begin
         end if;
     end process;
 
-    data <= bot(0).value when bot(0).data_present = '1' else (data’range => '0');
+    data <= bot(0).value when bot(0).data_present = '1' else (data'range => '0');
     empty <= not bot(0).data_present;
     full <= top(length-1).data_present;
     busy <= '1' when state /= ready else '0';

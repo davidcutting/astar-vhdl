@@ -2,7 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.node.all
+use work.node.all;
+use work.pair.all;
 
 entity cost is
     port (
@@ -17,6 +18,6 @@ architecture Behavioral of cost is
 
 begin
 
-    cost <= accum_cost + integer( abs( location.x - goal.x ) + abs( location.y - goal.y ) );
+    cost <= accum_cost + to_integer(abs( location.x - goal.x ) + abs( location.y - goal.y ));
 
 end Behavioral;

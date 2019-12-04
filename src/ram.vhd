@@ -33,6 +33,6 @@ begin
         end if;
     end process;
 
-    o_data <= ram_d(to_integer(unsigned(i_addr)))
+    o_data <= ram_d(to_integer(unsigned(i_addr)));
 
 end Behavioral;
