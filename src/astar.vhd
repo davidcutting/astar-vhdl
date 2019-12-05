@@ -14,6 +14,22 @@ end astar;
 
 architecture Behavioral of astar is
 
+-- openlist
+component priority_queue is
+    generic(
+        length  : integer :=16
+    );
+    port(
+        key : in integer; -- cost
+        value : in pair_t; -- graph node
+        clk, reset, insert, delete : in std_logic; -- clk & ctrl lines
+        data : out pair_t; -- lowest priority graph node
+        busy, empty, full : out std_logic -- status lines
+    );
+end component;
+
+
+
 -- used for came_from and cost_so_far mem
 component ram is
     generic(
@@ -42,9 +58,10 @@ signal b_cost_so_far_o_data : std_logic_vector(31 downto 0);
 signal c_cost_so_far_wr   : std_logic;
 
 -- keeping track of nodes
-type pair_array_t is array (0 to 15) of pair_t;
+type pair_array_t is array (0 to 15, 0 to 15) of pair_t;
+type int_array_t is array (0 to 15, 0 to 15) of integer;
 signal came_from : pair_array_t;
-signal cost_so_far : pair_array_t;
+signal cost_so_far : int_array_t;
 signal current : pair_t := start;
 
 -- neighbors
@@ -89,10 +106,19 @@ begin
     -- calculate gscore
     u_each_neigh : for i in 0 to 3 generate
         process(neigh(i))
-            variable neigh_gscore := integer;
+            variable neigh_gscore : integer;
+            variable cost : integer;
+            variable x_c : integer := to_integer(current.x);
+            variable y_c : integer := to_integer(current.y);
+            variable x_n : integer := to_integer(neigh(i).x);
+            variable y_n : integer := to_integer(neigh(i).y);
         begin
-            --neigh_gscore := cost_so_far[current] + 1;
-            cost <= accum_cost + to_integer(abs( current.x - goal.x ) + abs( current.y - goal.y ));
+            neigh_gscore := cost_so_far(x_c, y_c) + 1;
+            if neigh_gscore < cost_so_far(x_n, y_n) then
+                came_from(x_n, y_n) <= current;
+                cost_so_far(x_n, y_n) <= neigh_gscore;
+                cost <= cost_so_far(x_n, y_n) + to_integer(abs( current.x - goal.x ) + abs( current.y - goal.y ));
+            end if;
         end process;
     end generate u_each_neigh;
 

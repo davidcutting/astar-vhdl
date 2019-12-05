@@ -1,12 +1,11 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-use work.node.all;
 use work.pair.all;
 
 entity priority_queue is
     generic(
-        length  : integer
+        length  : integer := 16
     );
     port(
         key : in integer; -- cost
@@ -18,6 +17,12 @@ entity priority_queue is
 end priority_queue;
 
 architecture Behavioral of priority_queue is
+
+type node_t is record
+    data_present : std_logic;
+    key : integer;
+    value : pair_t;
+end record node_t;
 
 type rows_t is array(0 to length-1) of node_t;
 signal top, bot : rows_t; -- two rows to manage temporary space when sorting array
