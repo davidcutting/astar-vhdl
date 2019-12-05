@@ -9,8 +9,8 @@ architecture Behavioral of sequence_det_tst is
 
 component ram is
     generic(
-        WORD_SIZE : integer := 8;
-        ADDR_SIZE : integer := 16
+        WORD_SIZE : integer := 32;
+        ADDR_SIZE : integer := 32
     );
     port(
         clk, reset : in std_logic;
@@ -28,13 +28,15 @@ signal i_addr : std_logic_vector(ADDR_SIZE-1 downto 0);
 signal i_data : std_logic_vector(WORD_SIZE-1 downto 0);
 signal c_wr   : std_logic;
 
-
-
 -- outputs
 signal o_data : std_logic_vector(WORD_SIZE-1 downto 0);
 
+-- test variables
+signal pair1 : pair_t;
+signal pair2 : pair_t;
+
 -- clock period def
-constant CLK_FREQ : time := 10ns;
+constant CLK_FREQ : time := 100ns;
 
 begin
 
@@ -61,8 +63,8 @@ begin
         wait for CLK_FREQ;
         reset <= '0';
         wait for CLK_FREQ;
-        i_addr <= "";
-        i_data <= "";
+        i_addr <= pair_to_packed(pair1);
+        i_data <= "00000101";
         c_wr <= '1';
         wait for CLK_FREQ;
         c_wr <= '0';

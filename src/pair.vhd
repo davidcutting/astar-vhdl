@@ -16,7 +16,7 @@ end pair;
 
 package body pair is
 
-    function to_pair(packed_pair : signed(31 downto 0)) return pair_t is
+    function to_pair(packed_pair : std_logic_vector(31 downto 0)) return pair_t is
         variable temp : pair_t;
     begin
         temp.y := packed_pair(31 downto 16);
@@ -24,7 +24,7 @@ package body pair is
         return temp;
     end to_pair;
 
-    function pair_to_packed(unpacked_pair : pair_t) return signed is
+    function pair_to_packed(unpacked_pair : pair_t) return std_logic_vector is
         variable temp : signed(31 downto 0);
     begin
         temp(31 downto 16) := unpacked_pair.x;
