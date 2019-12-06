@@ -1,6 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.pair.all
+use work.pair.all;
 
 entity map_rom_tst is
 end map_rom_tst;
@@ -8,67 +8,34 @@ end map_rom_tst;
 architecture Behavioral of map_rom_tst is
 
 component map_rom is
-    generic(
-        WORD_SIZE : integer := 32;
-        ADDR_SIZE : integer := 32
-    );
     port(
-        clk, reset : in std_logic;
-        i_addr : in std_logic_vector(ADDR_SIZE-1 downto 0);
-        i_data : in std_logic_vector(WORD_SIZE-1 downto 0);
-        c_wr : in std_logic;
-        o_data : out std_logic_vector(WORD_SIZE-1 downto 0)
+        i_addr : in std_logic_vector(7 downto 0);
+        o_data : out std_logic_vector(7 downto 0)
     );
 end component;
 
 -- inputs
-signal clk : STD_LOGIC;
-signal reset : STD_LOGIC;
-signal i_addr : std_logic_vector(ADDR_SIZE-1 downto 0);
-signal i_data : std_logic_vector(WORD_SIZE-1 downto 0);
-signal c_wr   : std_logic;
+signal i_addr : std_logic_vector(7 downto 0);
 
 -- outputs
-signal o_data : std_logic_vector(WORD_SIZE-1 downto 0);
+signal o_data : std_logic_vector(7 downto 0);
 
--- test variables
-signal pair1 : pair_t;
-signal pair2 : pair_t;
-
--- clock period def
-constant CLK_FREQ : time := 100ns;
+-- pair
+signal coord : pair_t;
 
 begin
 
-    uut : ram port map (
-        clk => clk,
-        reset => reset,
+    uut : map_rom port map (
         i_addr => i_addr,
-        i_data => i_data,
-        c_wr => c_wr,
         o_data => o_data
     );
 
-    CLK_proc : process
-    begin
-        CLK <= '0';
-        wait for CLK_FREQ/2;
-        CLK <= '1';
-        wait for CLK_FREQ/2;
-    end process;
-
     stim_proc : process
     begin
-        reset <= '1';
-        wait for CLK_FREQ;
-        reset <= '0';
-        wait for CLK_FREQ;
-        i_addr <= pair_to_packed(pair1);
-        i_data <= "00000101";
-        c_wr <= '1';
-        wait for CLK_FREQ;
-        c_wr <= '0';
-        wait for CLK_FREQ;
+        coord.x <= x"05";
+        coord.y <= x"05";
+        i_addr <= std_logic_vector(pair_to_packed(coord));
+        wait for 100ns;
     end process;
 
 end Behavioral;

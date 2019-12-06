@@ -1,11 +1,11 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.pair.all
+use work.pair.all;
 
 entity ram_tst is
 end ram_tst;
 
-architecture Behavioral of sequence_det_tst is
+architecture Behavioral of ram_tst is
 
 component ram is
     generic(
@@ -24,12 +24,12 @@ end component;
 -- inputs
 signal clk : STD_LOGIC;
 signal reset : STD_LOGIC;
-signal i_addr : std_logic_vector(ADDR_SIZE-1 downto 0);
-signal i_data : std_logic_vector(WORD_SIZE-1 downto 0);
+signal i_addr : std_logic_vector(31 downto 0);
+signal i_data : std_logic_vector(31 downto 0);
 signal c_wr   : std_logic;
 
 -- outputs
-signal o_data : std_logic_vector(WORD_SIZE-1 downto 0);
+signal o_data : std_logic_vector(31 downto 0);
 
 -- test variables
 signal pair1 : pair_t;
@@ -63,7 +63,7 @@ begin
         wait for CLK_FREQ;
         reset <= '0';
         wait for CLK_FREQ;
-        i_addr <= pair_to_packed(pair1);
+        i_addr <= std_logic_vector(pair_to_packed(pair1));
         i_data <= "00000101";
         c_wr <= '1';
         wait for CLK_FREQ;

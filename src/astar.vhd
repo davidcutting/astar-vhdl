@@ -69,7 +69,7 @@ type neigh_array_t is array (0 to 3) of pair_t;
 signal neigh : neigh_array_t;
 
 -- control signals
-signal c_get_neigh;
+signal c_get_neigh : std_logic;
 
 begin
 
@@ -117,7 +117,7 @@ begin
             if neigh_gscore < cost_so_far(x_n, y_n) then
                 came_from(x_n, y_n) <= current;
                 cost_so_far(x_n, y_n) <= neigh_gscore;
-                cost <= cost_so_far(x_n, y_n) + to_integer(abs( current.x - goal.x ) + abs( current.y - goal.y ));
+                cost := cost_so_far(x_n, y_n) + to_integer(abs( current.x - goal.x ) + abs( current.y - goal.y ));
             end if;
         end process;
     end generate u_each_neigh;
