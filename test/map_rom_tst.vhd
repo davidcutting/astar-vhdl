@@ -1,5 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use ieee.numeric_std.all;
 use work.pair.all;
 
 entity map_rom_tst is
@@ -20,7 +21,6 @@ signal i_addr : std_logic_vector(7 downto 0);
 -- outputs
 signal o_data : std_logic_vector(7 downto 0);
 
--- pair
 signal coord : pair_t;
 
 begin
@@ -32,9 +32,9 @@ begin
 
     stim_proc : process
     begin
-        coord.x <= x"05";
-        coord.y <= x"05";
-        i_addr <= std_logic_vector(pair_to_packed(coord));
+        coord.x <= x"5";
+        coord.y <= x"2";
+        i_addr <= pair_to_packed(coord);
         wait for 100ns;
     end process;
 
