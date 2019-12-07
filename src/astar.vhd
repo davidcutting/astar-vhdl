@@ -8,7 +8,9 @@ entity astar is
     port (
         clk, reset : in std_logic;
         start : in pair_t;
-        goal : in pair_t
+        goal : in pair_t;
+        next_pos : out pair_t;
+        done_flag : out std_logic
     );
 end astar;
 
@@ -27,7 +29,7 @@ signal cost_map_i_addr : std_logic_vector(7 downto 0);
 signal cost_map_o_data : std_logic_vector(7 downto 0);
 
 -- current pos register
-signal current_pos : pair_t;
+signal current_pos : pair_t := start;
 -- current neighbor pos register
 signal neigh_pos : pair_t;
 -- accumulated movement cost register
@@ -37,8 +39,7 @@ signal best_fscore : integer := 696969;
 
 type state_t is (fetch, expand, close);
 signal state : state_t;
-
-signal error : std_logic;
+signal done : std_logic;
 
 -- control signals
 signal c_get_neigh  : std_logic; -- control signal to enable neighbor fetching
@@ -48,19 +49,27 @@ signal c_get_next_node : std_logic; -- write the lowest cost node to current pos
 
 begin
 
-    u_ctrl : process(clk)
-        variable num_neigh : integer(0 to 3) := 0;
+    u_ctrl : process(clk, reset)
+        variable num_neigh : integer range 0 to 3 := 0;
     begin
+        if reset = '1' then
+            c_get_neigh <= '0';
+            c_num_neigh <= "00";
+            c_wr_cur_pos <= '0';
+            c_get_next_node <= '0';
+            current_pos <= start;
+            best_fscore <= 696969;
+        end if;
         if rising_edge(clk) then
             case state is
                 when fetch =>
                     c_get_next_node <= '0';
                     c_get_neigh <= '1';
-                    c_num_neigh <= std_logic_vector(unsigned(num_neigh));
+                    c_num_neigh <= std_logic_vector(to_unsigned(num_neigh, c_num_neigh'length));
                     state <= expand;
                 when expand =>
                     c_get_neigh <= '0';
-                    if c_num_neigh = 3 then
+                    if num_neigh = 3 then
                         c_num_neigh <= "00";
                         state <= close;
                     else
@@ -69,7 +78,6 @@ begin
                 when close =>
                     c_get_next_node <= '1';
                     state <= fetch;
-                when others => error <= '1';
             end case;
         end if;
     end process;
@@ -113,8 +121,8 @@ begin
         variable neigh_fscore : integer;
     begin
         neigh_gscore := accum_cost + to_integer(unsigned(cost_map_o_data));
-        neigh_hscore := abs( to_integer(current.x) - to_integer(goal.x) )
-                        + abs( to_integer(current.y) - to_integer(goal.y) );
+        neigh_hscore := abs( to_integer( current_pos.x ) - to_integer( goal.x ) )
+                        + abs( to_integer( current_pos.y ) - to_integer( goal.y ) );
         neigh_fscore := neigh_gscore + neigh_hscore;
         if best_fscore > neigh_fscore then
             accum_cost <= neigh_gscore;
@@ -127,7 +135,13 @@ begin
         if c_get_next_node = '1' then
             current_pos <= neigh_pos;
             best_fscore <= 696969;
+            if current_pos = goal then
+                done <= '1';
+            end if;
         end if;
     end process;
+    
+    done_flag <= done;
+    next_pos <= current_pos;
 
 end Behavioral;
