@@ -14,93 +14,58 @@ end astar;
 
 architecture Behavioral of astar is
 
--- openlist
-component priority_queue is
-    generic(
-        length  : integer :=16
-    );
+component map_rom is
     port(
-        key : in integer; -- cost
-        value : in pair_t; -- graph node
-        clk, reset, insert, delete : in std_logic; -- clk & ctrl lines
-        data : out pair_t; -- lowest priority graph node
-        busy, empty, full : out std_logic -- status lines
+        i_addr : in std_logic_vector(7 downto 0);
+        o_data : out std_logic_vector(7 downto 0)
     );
 end component;
 
+-- map data busses
+signal cost_map_i_addr : std_logic_vector(7 downto 0);
+signal cost_map_o_data : std_logic_vector(7 downto 0);
 
-
--- used for came_from and cost_so_far mem
-component ram is
-    generic(
-        WORD_SIZE : integer := 32;
-        ADDR_SIZE : integer := 32
-    );
-    port(
-        clk, reset : in std_logic;
-        i_addr : in std_logic_vector(ADDR_SIZE-1 downto 0);
-        i_data : in std_logic_vector(WORD_SIZE-1 downto 0);
-        c_wr : in std_logic;
-        o_data : out std_logic_vector(WORD_SIZE-1 downto 0)
-    );
-end component;
-
--- u_came_from_mem
-signal b_came_from_addr : std_logic_vector(31 downto 0);
-signal b_came_from_i_data : std_logic_vector(31 downto 0);
-signal b_came_from_o_data : std_logic_vector(31 downto 0);
-signal c_came_from_wr   : std_logic;
-
--- u_cost_so_far_mem
-signal b_cost_so_far_addr : std_logic_vector(31 downto 0);
-signal b_cost_so_far_i_data : std_logic_vector(31 downto 0);
-signal b_cost_so_far_o_data : std_logic_vector(31 downto 0);
-signal c_cost_so_far_wr   : std_logic;
-
--- keeping track of nodes
-type pair_array_t is array (0 to 15, 0 to 15) of pair_t;
-type int_array_t is array (0 to 15, 0 to 15) of integer;
-signal came_from : pair_array_t;
-signal cost_so_far : int_array_t;
-signal current : pair_t := start;
-
--- neighbors
-type neigh_array_t is array (0 to 3) of pair_t;
-signal neigh : neigh_array_t;
+-- current pos register
+signal current_pos : pair_t;
 
 -- control signals
-signal c_get_neigh : std_logic;
+signal c_get_neigh  : std_logic; -- control signal to enable neighbor fetching
+signal c_num_neigh  : std_logic_vector(1 downto 0); -- control signal for which neighbor to fetch
 
 begin
 
-    -- add ram here for came_from and cost_so_far
-    u_came_from_mem : ram port map (
-        clk => clk,
-        reset => reset,
-        i_addr => b_came_from_addr,
-        i_data => b_came_from_i_data,
-        c_wr => c_came_from_wr,
-        o_data => b_came_from_o_data
-    );
-
-    u_cost_so_far_mem : ram port map (
-        clk => clk,
-        reset => reset,
-        i_addr => b_cost_so_far_addr,
-        i_data => b_cost_so_far_i_data,
-        c_wr => c_cost_so_far_wr,
-        o_data => b_cost_so_far_o_data
+    -- rom containing cost data for map
+    u_cost_map_rom : map_rom port map (
+        i_addr => cost_map_i_addr,
+        o_data => cost_map_o_data
     );
 
     -- find neighbors
-    process(clk, c_get_neigh)
+    u_fetch_neigh : process(clk, c_get_neigh, c_num_neigh)
+        variable temp_x : integer;
+        variable temp_y : integer;
+        variable neigh_pair : pair_t;
     begin
         if rising_edge(clk) and c_get_neigh = '1' then
-            neigh(0) <= (current.x, current.y + 1);
-            neigh(1) <= (current.x + 1, current.y);
-            neigh(2) <= (current.x, current.y - 1);
-            neigh(3) <= (current.x -1, current.y);
-        end if;
+            case c_num_neigh is
+                when "00" =>
+                    neigh_pair := current_pos;
+                    neigh_pair.y := neigh_pair.y + 1;
+                    cost_map_i_addr <= pair_to_packed(neigh_pair);
+                when "01" =>
+                    neigh_pair := current_pos;
+                    neigh_pair.x := neigh_pair.x + 1;
+                    cost_map_i_addr <= pair_to_packed(neigh_pair);
+                when "10" =>
+                    neigh_pair := current_pos;
+                    neigh_pair.y := neigh_pair.y - 1;
+                    cost_map_i_addr <= pair_to_packed(neigh_pair);
+                when "11" =>
+                    neigh_pair := current_pos;
+                    neigh_pair.x := neigh_pair.x - 1;
+                    cost_map_i_addr <= pair_to_packed(neigh_pair);
+                end case;
+            end if;
     end process;
 
     -- calculate gscore
