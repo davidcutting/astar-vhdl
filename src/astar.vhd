@@ -42,27 +42,25 @@ begin
 
     -- find neighbors
     u_fetch_neigh : process(clk, c_get_neigh, c_num_neigh)
-        variable temp_x : integer;
-        variable temp_y : integer;
         variable neigh_pair : pair_t;
     begin
         if rising_edge(clk) and c_get_neigh = '1' then
             case c_num_neigh is
                 when "00" =>
-                    neigh_pair := current_pos;
-                    neigh_pair.y := neigh_pair.y + 1;
+                    neigh_pair.x := current_pos.x;
+                    neigh_pair.y := current_pos.y + 1;
                     cost_map_i_addr <= pair_to_packed(neigh_pair);
                 when "01" =>
-                    neigh_pair := current_pos;
-                    neigh_pair.x := neigh_pair.x + 1;
+                    neigh_pair.x := current_pos.x + 1;
+                    neigh_pair.y := current_pos.y;
                     cost_map_i_addr <= pair_to_packed(neigh_pair);
                 when "10" =>
-                    neigh_pair := current_pos;
-                    neigh_pair.y := neigh_pair.y - 1;
+                    neigh_pair.x := current_pos.x;
+                    neigh_pair.y := current_pos.y - 1;
                     cost_map_i_addr <= pair_to_packed(neigh_pair);
                 when "11" =>
-                    neigh_pair := current_pos;
-                    neigh_pair.x := neigh_pair.x - 1;
+                    neigh_pair.x := current_pos.x - 1;
+                    neigh_pair.y := current_pos.y;
                     cost_map_i_addr <= pair_to_packed(neigh_pair);
                 end case;
             end if;
