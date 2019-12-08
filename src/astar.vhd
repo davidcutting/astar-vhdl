@@ -51,8 +51,6 @@ signal neigh_gscore : integer;
 signal neigh_fscore : integer; -- calculated neighbor fscore
 
 
-
-
 signal best_fscore : integer := 0; -- best neighbor cost in register
 signal best_neigh_pos : pair_t; -- best neighbor pos in register
 

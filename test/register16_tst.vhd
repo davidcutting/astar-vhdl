@@ -1,6 +1,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all;
+use work.pair.all;
 
 entity register16_tst is
 end register16_tst;
@@ -29,7 +30,7 @@ signal o_data : std_logic_vector(15 downto 0);
 constant clk_freq : time := 10ns;
 
 signal coord : pair_t;
-signal cost : integer in range 0 to 255;
+signal cost : integer range 0 to 255;
 
 begin
 
@@ -53,14 +54,14 @@ begin
     stim_proc : process
     begin
         reset <= '1';
-        wait for clk_freq;
-        reset <= '0';
-        wait for clk_freq;
         cost <= 100;
         coord.x <= x"5";
         coord.y <= x"2";
+        wait for clk_freq;
+        reset <= '0';
+        i_data <= pair_to_packed(coord) & std_logic_vector(to_unsigned(cost, 8));
+        wait for clk_freq;
         c_wr <= '1';
-        i_data <= pair_to_packed(coord) & std_logic_vector(to_unsigned(cost));
         wait for clk_freq;
         c_wr <= '0';
         wait;
