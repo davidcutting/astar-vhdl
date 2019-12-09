@@ -1,7 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
 use work.pair.all;
 
 entity astar is
@@ -10,11 +9,21 @@ entity astar is
         start : in pair_t;
         goal : in pair_t;
         next_pos : out pair_t;
+        state_flag : out std_logic_vector(2 downto 0);
         done_flag : out std_logic
     );
 end astar;
 
 architecture Behavioral of astar is
+
+-- neighbor fetching
+component neighbor_fetch is
+    port (
+        current_pos : in pair_t;
+        c_num_neigh : in std_logic_vector(1 downto 0);
+        neigh_pos   : out pair_t
+    );
+end component;
 
 -- cost map
 component map_rom is
@@ -43,145 +52,87 @@ component register16 is
     );
 end component;
 
+-- current_pos register
+component register8 is
+    port(
+        clk, reset : in std_logic;
+        i_data : in std_logic_vector(7 downto 0);
+        c_wr : in std_logic;
+        o_data : out std_logic_vector(7 downto 0)
+    );
+end component;
+
 -- data busses
-signal neigh_pos : pair_t;
-signal best_neigh : std_logic_vector;
-signal cost_map_o_data : std_logic_vector(7 downto 0);
-signal neigh_gscore : integer;
+signal current_pos : pair_t;
+signal current_pos_slv : std_logic_vector(7 downto 0);
+signal neigh_pos : pair_t; -- neighbor from neighbor fetch
+signal best_neigh_slv : std_logic_vector(15 downto 0); -- best neigh from nbest reg
+signal neigh_gscore_slv : std_logic_vector(7 downto 0); -- gscore from map to cost unit
 signal neigh_fscore : integer; -- calculated neighbor fscore
 
-
-signal best_fscore : integer := 0; -- best neighbor cost in register
-signal best_neigh_pos : pair_t; -- best neighbor pos in register
-
--- current pos register
-signal current_pos : pair_t := start;
-
-type state_t is (fetch, expand, close);
-signal state : state_t;
-signal done : std_logic;
-
 -- control signals
-signal c_get_neigh  : std_logic; -- control signal to enable neighbor fetching
 signal c_num_neigh  : std_logic_vector(1 downto 0); -- control signal for which neighbor to fetch
-signal c_wr_cur_pos : std_logic; -- to write to current position register
-signal c_get_next_node : std_logic; -- write the lowest cost node to current pos register
+signal c_wr_best_neigh : std_logic; -- to write to the best neigh register
+signal c_rst_best_neigh : std_logic;
+signal c_wr_curr_pos : std_logic; -- to write to current position register
+
+signal test : std_logic_vector(15 downto 0);
 
 begin
 
     -- find neighbors
-    u_fetch_neigh : process(c_get_neigh, c_num_neigh)
-        variable neigh_pair : pair_t;
-    begin
-        if c_get_neigh = '1' then
-            case c_num_neigh is
-                when "00" =>
-                    neigh_pair.x := current_pos.x;
-                    neigh_pair.y := current_pos.y + 1;
-                when "01" =>
-                    neigh_pair.x := current_pos.x + 1;
-                    neigh_pair.y := current_pos.y;
-                when "10" =>
-                    neigh_pair.x := current_pos.x;
-                    neigh_pair.y := current_pos.y - 1;
-                when "11" =>
-                    neigh_pair.x := current_pos.x - 1;
-                    neigh_pair.y := current_pos.y;
-                when others =>
-                    neigh_pair := current_pos;
-            end case;
-            neigh_pos <= neigh_pair;
-        end if;
-    end process;
+    u_fetch_neigh : neighbor_fetch port map (
+        current_pos => current_pos,
+        c_num_neigh => c_num_neigh,
+        neigh_pos => neigh_pos
+    );
 
     -- rom containing cost data for map
     u_cost_map_rom : map_rom port map (
         i_addr => pair_to_packed(neigh_pos),
-        o_data => cost_map_o_data
+        o_data => neigh_gscore_slv
     );
-    neigh_gscore <= to_integer(unsigned(cost_map_o_data)); -- convert to integer
 
     -- cost unit to calculate neighbor cost
     u_cost : cost port map (
         neigh_pos => neigh_pos,
         goal_pos => goal,
-        neigh_gscore => neigh_gscore,
+        neigh_gscore => to_integer(unsigned(neigh_gscore_slv)),
         neigh_fscore => neigh_fscore
     );
 
+    -- register containing the best neighbor
+    c_wr_best_neigh <= '1' when neigh_fscore < to_integer(unsigned(best_neigh(7 downto 0))) else '0';
+    test <= pair_to_packed(neigh_pos) & std_logic_vector(to_unsigned(neigh_fscore, 8));
+    u_best_neigh_reg : register16 port map (
+        clk => clk,
+        reset => c_rst_best_neigh,
+        i_data => test,
+        c_wr => c_wr_best_neigh,
+        o_data => best_neigh_slv
+    );
 
-
-
-
-
-
-
-
-
-
-    u_ctrl : process(clk, reset)
-        variable num_neigh : integer range 0 to 3 := 0;
-    begin
-        if reset = '1' then
-            c_get_neigh <= '0';
-            c_num_neigh <= "00";
-            c_wr_cur_pos <= '0';
-            c_get_next_node <= '0';
-            current_pos <= start;
-            best_fscore <= 100;
-        end if;
-        if rising_edge(clk) then
-            case state is
-                when fetch =>
-                    c_get_next_node <= '0';
-                    c_get_neigh <= '1';
-                    c_num_neigh <= std_logic_vector(to_unsigned(num_neigh, c_num_neigh'length));
-                    state <= expand;
-                when expand =>
-                    c_get_neigh <= '0';
-                    if num_neigh = 3 then
-                        c_num_neigh <= "00";
-                        state <= close;
-                    else
-                        state <= fetch;
-                    end if;
-                when close =>
-                    c_get_next_node <= '1';
-                    state <= fetch;
-            end case;
-        end if;
-    end process;
-
-
-
-    -- find best neighbor
-    u_next_best_step : process(neigh_pos, cost_map_o_data)
-        variable neigh_gscore : integer;
-        variable neigh_hscore : integer;
-        variable neigh_fscore : integer;
-    begin
-        neigh_gscore := accum_cost + to_integer(unsigned(cost_map_o_data));
-        neigh_hscore := abs( to_integer( current_pos.x ) - to_integer( goal.x ) )
-                        + abs( to_integer( current_pos.y ) - to_integer( goal.y ) );
-        neigh_fscore := neigh_gscore + neigh_hscore;
-        if best_fscore > neigh_fscore then
-            accum_cost <= neigh_gscore;
-            best_fscore <= neigh_fscore;
-        end if;
-    end process;
-
-    u_move : process(c_get_next_node)
-    begin
-        if c_get_next_node = '1' then
-            current_pos <= neigh_pos;
-            best_fscore <= 100;
-            if current_pos = goal then
-                done <= '1';
-            end if;
-        end if;
-    end process;
-
-    done_flag <= done;
+    u_current_pos_reg : register8 port map (
+        clk => clk,
+        reset => reset,
+        i_data => best_neigh_slv(15 downto 8),
+        c_wr => c_wr_curr_pos,
+        o_data => current_pos_slv
+    );
+    current_pos <= to_pair(current_pos_slv);
     next_pos <= current_pos;
+
+    u_control_unit : control port map (
+        clk => clk,
+        reset => reset,
+        current_pos => current_pos,
+        goal_pos => goal,
+        c_state => state_flag,
+        c_num_neigh => c_num_neigh,
+        c_wr_best_neigh => c_wr_best_neigh,
+        c_rst_best_neigh => c_rst_best_neigh,
+        c_wr_curr_pos => c_wr_curr_pos,
+        c_done => done_flag
+    );
 
 end Behavioral;
