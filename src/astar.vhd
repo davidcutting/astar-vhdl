@@ -16,6 +16,21 @@ end astar;
 
 architecture Behavioral of astar is
 
+-- control unit
+component control is
+    port (
+        clk, reset : in std_logic;
+        current_pos : in pair_t;
+        goal_pos : in pair_t;
+        c_state : out std_logic_vector(2 downto 0);
+        c_num_neigh : out std_logic_vector(1 downto 0);
+        c_wr_best_neigh : out std_logic;
+        c_rst_best_neigh : out std_logic;
+        c_wr_curr_pos : out std_logic;
+        c_done : out std_logic
+    );
+end component;
+
 -- neighbor fetching
 component neighbor_fetch is
     port (
@@ -102,7 +117,7 @@ begin
     );
 
     -- register containing the best neighbor
-    c_wr_best_neigh <= '1' when neigh_fscore < to_integer(unsigned(best_neigh(7 downto 0))) else '0';
+    c_wr_best_neigh <= '1' when neigh_fscore < to_integer(unsigned(best_neigh_slv(7 downto 0))) else '0';
     test <= pair_to_packed(neigh_pos) & std_logic_vector(to_unsigned(neigh_fscore, 8));
     u_best_neigh_reg : register16 port map (
         clk => clk,
@@ -119,7 +134,7 @@ begin
         c_wr => c_wr_curr_pos,
         o_data => current_pos_slv
     );
-    current_pos <= to_pair(current_pos_slv);
+    current_pos <= start when reset = '1' else to_pair(current_pos_slv);
     next_pos <= current_pos;
 
     u_control_unit : control port map (

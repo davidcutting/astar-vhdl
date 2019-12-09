@@ -29,17 +29,17 @@ begin
             state <= init;
         elsif rising_edge(clk) then
             case state is
-                when init => state <= fetch_n1;
+                when init =>
+                    if current_pos = goal_pos then
+                        state <= done;
+                    else
+                        state <= fetch_n1;
+                    end if;
                 when fetch_n1 => state <= fetch_n2;
                 when fetch_n2 => state <= fetch_n3;
                 when fetch_n3 => state <= fetch_n4;
                 when fetch_n4 => state <= visit;
-                when visit =>
-                    if current_pos = goal_pos then
-                        state <= done;
-                    else
-                        state <= init;
-                    end if;
+                when visit => state <= init;
                 when done => state <= done;
             end case;
         end if;

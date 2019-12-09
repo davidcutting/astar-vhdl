@@ -59,10 +59,10 @@ begin
     begin
         reset <= '1';
         wait for clk_freq;
-        test_start.x := x"3";
-        test_start.y := x"5";
-        test_goal.x := x"1";
-        test_goal.y := x"6";
+        test_start.x := x"0";
+        test_start.y := x"0";
+        test_goal.x := x"6";
+        test_goal.y := x"1";
         start <= test_start;
         goal <= test_goal;
         reset <= '0';
